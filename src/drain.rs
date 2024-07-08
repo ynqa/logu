@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     fmt::{self, Debug},
-    num::NonZeroUsize,
 };
 
 use lru::LruCache;
@@ -25,7 +24,7 @@ impl LogCluster {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Node {
     key_to_child_node: HashMap<String, Node>,
     cluster_ids: Vec<usize>,
@@ -57,7 +56,7 @@ pub struct Drain {
 impl Default for Drain {
     fn default() -> Self {
         Self {
-            id_to_cluster: LruCache::new(NonZeroUsize::new(100).unwrap()),
+            id_to_cluster: LruCache::unbounded(),
             log_cluster_depth: 4,
             max_node_depth: 4 - 2,
             sim_th: 0.4,
@@ -82,6 +81,8 @@ impl Drain {
                 match_cluster.log_template_tokens =
                     self.create_template(&tokens, &match_cluster.log_template_tokens);
                 match_cluster.size += 1;
+                self.id_to_cluster
+                    .put(match_cluster.cluster_id, match_cluster.clone());
                 match_cluster
             }
             None => {
@@ -217,6 +218,7 @@ impl Drain {
                 {
                     new_cluster_ids.push(*cluster_id);
                 }
+                new_cluster_ids.push(cluster.cluster_id);
                 cur_node.cluster_ids = new_cluster_ids;
                 break;
             }
