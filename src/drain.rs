@@ -1,21 +1,12 @@
-use std::{
-    collections::HashMap,
-    fmt::{self, Debug},
-};
+use std::{collections::HashMap, fmt::Debug};
 
 use lru::LruCache;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LogCluster {
     log_template_tokens: Vec<String>,
     cluster_id: usize,
     size: usize,
-}
-
-impl Debug for LogCluster {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.get_template())
-    }
 }
 
 impl LogCluster {
@@ -290,4 +281,64 @@ fn tokenize(log_message: &str) -> Vec<String> {
         .split_whitespace()
         .map(|s| s.to_string())
         .collect()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    mod train {
+        use super::*;
+
+        #[test]
+        fn test() {
+            let logs = vec![
+                "connected to 10.0.0.1",
+                "connected to 10.0.0.2",
+                "connected to 10.0.0.3",
+                "Hex number 0xDEADBEAF",
+                "Hex number 0x10000",
+                "user davidoh logged in",
+                "user eranr logged in",
+            ];
+            let mut drain = Drain::default();
+            for log in logs {
+                drain.train(log);
+            }
+            let mut clusters = drain.clusters();
+            clusters.sort_by_key(|c| c.cluster_id);
+            assert_eq!(
+                clusters,
+                vec![
+                    &LogCluster {
+                        log_template_tokens: vec![
+                            String::from("connected"),
+                            String::from("to"),
+                            String::from("<*>"),
+                        ],
+                        cluster_id: 1,
+                        size: 3,
+                    },
+                    &LogCluster {
+                        log_template_tokens: vec![
+                            String::from("Hex"),
+                            String::from("number"),
+                            String::from("<*>"),
+                        ],
+                        cluster_id: 2,
+                        size: 2,
+                    },
+                    &LogCluster {
+                        log_template_tokens: vec![
+                            String::from("user"),
+                            String::from("<*>"),
+                            String::from("logged"),
+                            String::from("in"),
+                        ],
+                        cluster_id: 3,
+                        size: 2,
+                    },
+                ]
+            );
+        }
+    }
 }
