@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::{collections::HashMap, fmt::Debug, num::NonZeroUsize};
 
 use lru::LruCache;
 
@@ -7,12 +7,6 @@ pub struct LogCluster {
     log_template_tokens: Vec<String>,
     cluster_id: usize,
     size: usize,
-}
-
-impl LogCluster {
-    pub fn get_template(&self) -> String {
-        self.log_template_tokens.join(" ")
-    }
 }
 
 #[derive(Clone, Default, Debug)]
@@ -24,7 +18,6 @@ pub struct Node {
 pub struct Drain {
     id_to_cluster: LruCache<usize, LogCluster>,
 
-    log_cluster_depth: usize,
     max_node_depth: usize,
 
     /// Similarity threshold.
@@ -35,8 +28,6 @@ pub struct Drain {
     /// Maximum number of children within a node.
     max_children: usize,
 
-    /// Maximum number of clusters.
-    max_clusters: Option<usize>,
     cluster_counter: usize,
 
     root: Node,
@@ -48,11 +39,9 @@ impl Default for Drain {
     fn default() -> Self {
         Self {
             id_to_cluster: LruCache::unbounded(),
-            log_cluster_depth: 4,
-            max_node_depth: 4 - 2,
+            max_node_depth: 2,
             sim_th: 0.4,
             max_children: 100,
-            max_clusters: None,
             cluster_counter: 0,
             root: Node::default(),
             param_str: "<*>".to_string(),
@@ -61,6 +50,27 @@ impl Default for Drain {
 }
 
 impl Drain {
+    pub fn new(max_clusters: Option<usize>, log_cluster_depth: usize) -> anyhow::Result<Self> {
+        let id_to_cluster = match max_clusters {
+            Some(max_clusters) => LruCache::new(NonZeroUsize::new(max_clusters).unwrap()),
+            None => LruCache::unbounded(),
+        };
+
+        if log_cluster_depth < 3 {
+            return Err(anyhow::anyhow!("depth argument must be at least 3"));
+        }
+
+        Ok(Self {
+            id_to_cluster,
+            max_node_depth: log_cluster_depth - 2,
+            sim_th: 0.4,
+            max_children: 100,
+            cluster_counter: 0,
+            root: Node::default(),
+            param_str: "<*>".to_string(),
+        })
+    }
+
     pub fn clusters(&self) -> Vec<&LogCluster> {
         self.id_to_cluster.iter().map(|(_, v)| v).collect()
     }
