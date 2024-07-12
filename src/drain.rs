@@ -9,6 +9,12 @@ pub struct LogCluster {
     size: usize,
 }
 
+impl ToString for LogCluster {
+    fn to_string(&self) -> String {
+        self.log_template_tokens.join(" ")
+    }
+}
+
 #[derive(Clone, Default, Debug)]
 pub struct Node {
     key_to_child_node: HashMap<String, Node>,
