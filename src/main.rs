@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
         //     io::stdout(),
         //     style::Print(cluster.to_string()),
         // )?;
-        println!("{}", cluster.to_string());
+        println!("{} {}", cluster.size, cluster.to_string());
     }
 
     Ok(())

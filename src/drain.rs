@@ -6,7 +6,7 @@ use lru::LruCache;
 pub struct LogCluster {
     log_template_tokens: Vec<String>,
     cluster_id: usize,
-    size: usize,
+    pub size: usize,
 }
 
 impl ToString for LogCluster {
