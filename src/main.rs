@@ -1,10 +1,15 @@
+use std::io;
+
 use clap::Parser;
 use promkit::crossterm::{
+    self, cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
-    terminal::{disable_raw_mode, enable_raw_mode},
+    style,
+    terminal::{self, disable_raw_mode, enable_raw_mode},
 };
 use tokio::{
     sync::mpsc,
+    task::JoinHandle,
     time::{self, Duration},
 };
 use tokio_util::sync::CancellationToken;
@@ -30,21 +35,42 @@ async fn main() -> anyhow::Result<()> {
 
     tokio::spawn(async move { stdin::streaming(tx, Duration::from_millis(10), canceled).await });
 
-    let draining = tokio::spawn(async move {
-        let interval = time::interval(Duration::from_micros(10));
-        futures::pin_mut!(interval);
+    let _: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
+        let draw_interval = time::interval(Duration::from_millis(100));
+        let train_interval = time::interval(Duration::from_millis(10));
+        futures::pin_mut!(draw_interval);
+        futures::pin_mut!(train_interval);
+
         let mut drain = Drain::default();
 
         loop {
-            let _ = interval.tick().await;
-            match rx.recv().await {
-                Some(msg) => {
-                    drain.train(msg);
+            tokio::select! {
+                _ = train_interval.tick() => {
+                    match rx.recv().await {
+                        Some(msg) => {
+                            drain.train(msg);
+                        }
+                        None => break,
+                    }
                 }
-                None => break,
+                _ = draw_interval.tick() => {
+                    let terminal_size = crossterm::terminal::size()?;
+                    crossterm::execute!(
+                        io::stdout(),
+                        terminal::Clear(terminal::ClearType::All),
+                        cursor::MoveTo(0, 0),
+                    )?;
+                    for cluster in drain.clusters().iter().take(terminal_size.1 as usize) {
+                        crossterm::execute!(
+                            io::stdout(),
+                            style::Print(cluster.to_string()),
+                            cursor::MoveToNextLine(1),
+                        )?;
+                    }
+                }
             }
         }
-        drain
+        Ok(())
     });
 
     loop {
@@ -61,16 +87,8 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    disable_raw_mode()?;
-
     canceler.cancel();
-    for cluster in draining.await?.clusters() {
-        // crossterm::execute!(
-        //     io::stdout(),
-        //     style::Print(cluster.to_string()),
-        // )?;
-        println!("{} {}", cluster.size, cluster.to_string());
-    }
 
+    disable_raw_mode()?;
     Ok(())
 }
