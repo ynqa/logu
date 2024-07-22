@@ -56,24 +56,26 @@ impl Default for Drain {
 }
 
 impl Drain {
-    pub fn new(max_clusters: Option<usize>, log_cluster_depth: usize) -> anyhow::Result<Self> {
+    pub fn new(
+        max_clusters: Option<usize>,
+        max_node_depth: usize,
+        sim_th: f32,
+        max_children: usize,
+        param_str: String,
+    ) -> anyhow::Result<Self> {
         let id_to_cluster = match max_clusters {
             Some(max_clusters) => LruCache::new(NonZeroUsize::new(max_clusters).unwrap()),
             None => LruCache::unbounded(),
         };
 
-        if log_cluster_depth < 3 {
-            return Err(anyhow::anyhow!("depth argument must be at least 3"));
-        }
-
         Ok(Self {
             id_to_cluster,
-            max_node_depth: log_cluster_depth - 2,
-            sim_th: 0.4,
-            max_children: 100,
+            max_node_depth,
+            sim_th,
+            max_children,
             cluster_counter: 0,
             root: Node::default(),
-            param_str: "<*>".to_string(),
+            param_str,
         })
     }
 
