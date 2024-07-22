@@ -3,9 +3,9 @@ use std::io;
 use clap::Parser;
 use promkit::crossterm::{
     self, cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
+    event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
     style,
-    terminal::{self, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode},
 };
 use tokio::{
     sync::mpsc,
@@ -62,6 +62,8 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     enable_raw_mode()?;
+    // Avoid the rendering messy by disabling mouse scroll and fixing the row.
+    crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture)?;
 
     let canceler = CancellationToken::new();
 
@@ -105,7 +107,7 @@ async fn main() -> anyhow::Result<()> {
                     let terminal_size = crossterm::terminal::size()?;
                     crossterm::execute!(
                         io::stdout(),
-                        terminal::Clear(terminal::ClearType::All),
+                        crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
                         cursor::MoveTo(0, 0),
                     )?;
                     for cluster in drain.clusters().iter().take(terminal_size.1 as usize) {
@@ -122,7 +124,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     loop {
-        let event = event::read()?;
+        let event = crossterm::event::read()?;
         if event
             == Event::Key(KeyEvent {
                 code: KeyCode::Enter,
@@ -139,5 +141,6 @@ async fn main() -> anyhow::Result<()> {
     draining.await??;
 
     disable_raw_mode()?;
+    crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture)?;
     Ok(())
 }
