@@ -8,15 +8,14 @@ use promkit::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use tokio::{
-    sync::mpsc,
+    io::{AsyncBufReadExt, BufReader},
     task::JoinHandle,
-    time::{self, Duration},
+    time::{self, timeout, Duration},
 };
 use tokio_util::sync::CancellationToken;
 
 mod drain;
 use drain::Drain;
-mod stdin;
 
 #[derive(Parser)]
 #[command(name = "dlg", version)]
@@ -68,17 +67,6 @@ async fn main() -> anyhow::Result<()> {
     let canceler = CancellationToken::new();
 
     let canceled = canceler.clone();
-    let (tx, mut rx) = mpsc::channel(1);
-
-    tokio::spawn(async move {
-        stdin::streaming(
-            tx,
-            Duration::from_millis(args.retrieval_timeout_millis),
-            canceled,
-        )
-        .await
-    });
-
     let draining: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
         let render_interval = time::interval(Duration::from_millis(args.render_interval_millis));
         let train_interval = time::interval(Duration::from_millis(args.train_interval_millis));
@@ -93,14 +81,27 @@ async fn main() -> anyhow::Result<()> {
             args.param_str,
         )?;
 
-        loop {
+        let mut reader = BufReader::new(tokio::io::stdin()).lines();
+
+        while !canceled.is_cancelled() {
             tokio::select! {
                 _ = train_interval.tick() => {
-                    match rx.recv().await {
-                        Some(msg) => {
-                            drain.train(msg);
+                    // Set a timeout to ensure non-blocking behavior,
+                    // especially responsive to user inputs like ctrl+c.
+                    // Continuously retry until cancellation to prevent loss of logs.
+                    let ret = timeout(Duration::from_millis(args.retrieval_timeout_millis), reader.next_line()).await;
+                    if ret.is_err() {
+                        continue;
+                    }
+
+                    let ret = ret?;
+
+                    match ret {
+                        Ok(Some(line)) => {
+                            let escaped = strip_ansi_escapes::strip_str(line.replace(['\n', '\t'], " "));
+                            drain.train(escaped);
                         }
-                        None => break,
+                        _ => break,
                     }
                 }
                 _ = render_interval.tick() => {
