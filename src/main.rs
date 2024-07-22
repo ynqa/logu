@@ -10,7 +10,7 @@ use promkit::crossterm::{
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     task::JoinHandle,
-    time::{self, timeout, Duration},
+    time::{self, Duration},
 };
 use tokio_util::sync::CancellationToken;
 
@@ -86,17 +86,7 @@ async fn main() -> anyhow::Result<()> {
         while !canceled.is_cancelled() {
             tokio::select! {
                 _ = train_interval.tick() => {
-                    // Set a timeout to ensure non-blocking behavior,
-                    // especially responsive to user inputs like ctrl+c.
-                    // Continuously retry until cancellation to prevent loss of logs.
-                    let ret = timeout(Duration::from_millis(args.retrieval_timeout_millis), reader.next_line()).await;
-                    if ret.is_err() {
-                        continue;
-                    }
-
-                    let ret = ret?;
-
-                    match ret {
+                    match reader.next_line().await {
                         Ok(Some(line)) => {
                             let escaped = strip_ansi_escapes::strip_str(line.replace(['\n', '\t'], " "));
                             drain.train(escaped);
