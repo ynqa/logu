@@ -1,7 +1,12 @@
 [package]
 name = "dlogon"
 version = "0.1.0"
+authors = ["ynqa <un.pensiero.vano@gmail.com>"]
 edition = "2021"
+description = "Log parsing for aggregation"
+repository = "https://github.com/ynqa/dlogon"
+license = "MIT"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.86"
