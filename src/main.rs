@@ -125,15 +125,22 @@ async fn main() -> anyhow::Result<()> {
 
     loop {
         let event = crossterm::event::read()?;
-        if event
-            == Event::Key(KeyEvent {
+        match event {
+            Event::Key(KeyEvent {
                 code: KeyCode::Enter,
                 modifiers: KeyModifiers::NONE,
                 kind: KeyEventKind::Press,
                 state: KeyEventState::NONE,
             })
-        {
-            break;
+            | Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers: KeyModifiers::CONTROL,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            }) => {
+                break;
+            }
+            _ => {}
         }
     }
 
