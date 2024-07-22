@@ -18,7 +18,6 @@ mod drain;
 use drain::Drain;
 mod stdin;
 
-/// Interactive grep (for streaming)
 #[derive(Parser)]
 #[command(name = "dlg", version)]
 #[command(name = "dlg", version)]

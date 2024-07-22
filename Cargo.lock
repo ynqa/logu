@@ -208,7 +208,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dlogon"
+name = "dlg"
 version = "0.1.0"
 dependencies = [
  "anyhow",
