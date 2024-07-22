@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::Debug, num::NonZeroUsize};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+    num::NonZeroUsize,
+};
 
 use lru::LruCache;
 
@@ -9,9 +13,9 @@ pub struct LogCluster {
     pub size: usize,
 }
 
-impl ToString for LogCluster {
-    fn to_string(&self) -> String {
-        self.log_template_tokens.join(" ")
+impl Display for LogCluster {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.log_template_tokens.join(" "))
     }
 }
 
@@ -162,7 +166,7 @@ impl Drain {
         let mut max_sim = -1.0;
         let mut max_param_count = -1;
         for id in cluster_ids {
-            let cluster = self.id_to_cluster.get(&id).cloned();
+            let cluster = self.id_to_cluster.get(id).cloned();
             if let Some(cluster) = cluster {
                 let (cur_sim, param_count) =
                     self.get_seq_distance(tokens, &cluster.log_template_tokens, include_params);
@@ -209,7 +213,7 @@ impl Drain {
             .root
             .key_to_child_node
             .entry(token_count_str)
-            .or_insert_with(Node::default);
+            .or_default();
 
         if token_count == 0 {
             cur_node.cluster_ids.push(cluster.cluster_id);
@@ -242,23 +246,11 @@ impl Drain {
                         } else {
                             cur_node = cur_node.key_to_child_node.get_mut(&self.param_str).unwrap();
                         }
-                    } else {
-                        if cur_node.key_to_child_node.len() + 1 < self.max_children {
-                            let new_node = Node::default();
-                            cur_node.key_to_child_node.insert(token.clone(), new_node);
-                            cur_node = cur_node.key_to_child_node.get_mut(token).unwrap();
-                        } else if cur_node.key_to_child_node.len() + 1 == self.max_children {
-                            let new_node = Node::default();
-                            cur_node
-                                .key_to_child_node
-                                .insert(self.param_str.clone(), new_node);
-                            cur_node = cur_node.key_to_child_node.get_mut(&self.param_str).unwrap();
-                        } else {
-                            cur_node = cur_node.key_to_child_node.get_mut(&self.param_str).unwrap();
-                        }
-                    }
-                } else {
-                    if !cur_node.key_to_child_node.contains_key(&self.param_str) {
+                    } else if cur_node.key_to_child_node.len() + 1 < self.max_children {
+                        let new_node = Node::default();
+                        cur_node.key_to_child_node.insert(token.clone(), new_node);
+                        cur_node = cur_node.key_to_child_node.get_mut(token).unwrap();
+                    } else if cur_node.key_to_child_node.len() + 1 == self.max_children {
                         let new_node = Node::default();
                         cur_node
                             .key_to_child_node
@@ -267,6 +259,14 @@ impl Drain {
                     } else {
                         cur_node = cur_node.key_to_child_node.get_mut(&self.param_str).unwrap();
                     }
+                } else if !cur_node.key_to_child_node.contains_key(&self.param_str) {
+                    let new_node = Node::default();
+                    cur_node
+                        .key_to_child_node
+                        .insert(self.param_str.clone(), new_node);
+                    cur_node = cur_node.key_to_child_node.get_mut(&self.param_str).unwrap();
+                } else {
+                    cur_node = cur_node.key_to_child_node.get_mut(&self.param_str).unwrap();
                 }
             } else {
                 cur_node = cur_node.key_to_child_node.get_mut(token).unwrap();
@@ -295,7 +295,6 @@ fn has_number(s: &str) -> bool {
 
 fn tokenize(log_message: &str) -> Vec<String> {
     log_message
-        .trim()
         .split_whitespace()
         .map(|s| s.to_string())
         .collect()

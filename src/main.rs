@@ -78,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
         .await
     });
 
-    let _: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
+    let draining: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
         let render_interval = time::interval(Duration::from_millis(args.render_interval_millis));
         let train_interval = time::interval(Duration::from_millis(args.train_interval_millis));
         futures::pin_mut!(render_interval);
@@ -112,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
                     for cluster in drain.clusters().iter().take(terminal_size.1 as usize) {
                         crossterm::execute!(
                             io::stdout(),
-                            style::Print(cluster.to_string()),
+                            style::Print(cluster),
                             cursor::MoveToNextLine(1),
                         )?;
                     }
@@ -137,6 +137,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     canceler.cancel();
+    draining.await??;
 
     disable_raw_mode()?;
     Ok(())
