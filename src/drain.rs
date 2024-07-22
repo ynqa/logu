@@ -9,7 +9,7 @@ use lru::LruCache;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LogCluster {
     log_template_tokens: Vec<String>,
-    cluster_id: usize,
+    pub cluster_id: usize,
     pub size: usize,
 }
 
@@ -19,7 +19,7 @@ impl Display for LogCluster {
     }
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default)]
 pub struct Node {
     key_to_child_node: HashMap<String, Node>,
     cluster_ids: Vec<usize>,
@@ -43,6 +43,52 @@ pub struct Drain {
     root: Node,
 
     param_str: String,
+}
+
+impl Debug for Drain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let id_to_cluster: HashMap<_, _> = self
+            .id_to_cluster
+            .iter()
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+
+        fn fmt_node(
+            node: &Node,
+            f: &mut std::fmt::Formatter<'_>,
+            depth: usize,
+            id_to_cluster: &HashMap<usize, LogCluster>,
+        ) -> std::fmt::Result {
+            for _ in 0..depth {
+                write!(f, "  ")?;
+            }
+            writeln!(f, "Node {{ cluster_ids: {:?} }}", node.cluster_ids)?;
+            for cluster_id in &node.cluster_ids {
+                if let Some(cluster) = id_to_cluster.get(cluster_id) {
+                    for _ in 0..depth + 1 {
+                        write!(f, "  ")?;
+                    }
+                    writeln!(
+                        f,
+                        "id: {}, log_template_tokens: {:?}",
+                        cluster.cluster_id, cluster.log_template_tokens
+                    )?;
+                }
+            }
+            for (key, child) in &node.key_to_child_node {
+                for _ in 0..depth + 1 {
+                    write!(f, "  ")?;
+                }
+                writeln!(f, "key: {}", key)?;
+                fmt_node(child, f, depth + 1, id_to_cluster)?;
+            }
+            Ok(())
+        }
+
+        writeln!(f, "Drain {{")?;
+        fmt_node(&self.root, f, 1, &id_to_cluster)?;
+        writeln!(f, "}}")
+    }
 }
 
 impl Default for Drain {
