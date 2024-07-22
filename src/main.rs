@@ -22,13 +22,6 @@ use drain::Drain;
 #[command(name = "dlg", version)]
 pub struct Args {
     #[arg(
-        long = "retrieval-timeout",
-        default_value = "10",
-        help = "Timeout to read a next line from the stream in milliseconds."
-    )]
-    pub retrieval_timeout_millis: u64,
-
-    #[arg(
         long = "render-interval",
         default_value = "100",
         help = "Interval to render the list in milliseconds.",
