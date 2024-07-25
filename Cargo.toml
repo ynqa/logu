@@ -1,10 +1,10 @@
 [package]
-name = "dlg"
+name = "logu"
 version = "0.1.0"
 authors = ["ynqa <un.pensiero.vano@gmail.com>"]
 edition = "2021"
-description = "Log parsing for aggregation"
-repository = "https://github.com/ynqa/dlogon"
+description = "Log parsing for message aggregation"
+repository = "https://github.com/ynqa/logu"
 license = "MIT"
 readme = "README.md"
 

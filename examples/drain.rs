@@ -1,4 +1,4 @@
-use dlg::drain::Drain;
+use logu::drain::Drain;
 
 fn main() {
     let logs = vec![

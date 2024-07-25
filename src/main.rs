@@ -18,8 +18,7 @@ mod drain;
 use drain::Drain;
 
 #[derive(Parser)]
-#[command(name = "dlg", version)]
-#[command(name = "dlg", version)]
+#[command(name = "logu", version)]
 pub struct Args {
     #[arg(
         long = "retrieval-timeout",
