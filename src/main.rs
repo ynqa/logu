@@ -62,7 +62,11 @@ async fn main() -> anyhow::Result<()> {
 
     enable_raw_mode()?;
     // Avoid the rendering messy by disabling mouse scroll and fixing the row.
-    crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture)?;
+    crossterm::execute!(
+        io::stdout(),
+        crossterm::event::EnableMouseCapture,
+        crossterm::cursor::Hide
+    )?;
 
     let canceler = CancellationToken::new();
 
@@ -121,6 +125,10 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
+        crossterm::execute!(
+            io::stdout(),
+            crossterm::terminal::Clear(crossterm::terminal::ClearType::Purge),
+        )?;
         Ok(())
     });
 
@@ -149,6 +157,10 @@ async fn main() -> anyhow::Result<()> {
     draining.await??;
 
     disable_raw_mode()?;
-    crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture)?;
+    crossterm::execute!(
+        io::stdout(),
+        crossterm::event::DisableMouseCapture,
+        crossterm::cursor::Show
+    )?;
     Ok(())
 }
