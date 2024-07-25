@@ -47,7 +47,7 @@ stern --context kind-kind - | logu
 
 | Key                        | Action
 | :-                         | :-
-| <kbd>Ctrl + C</kbd>, Enter | Exit `sig`
+| <kbd>Ctrl + C</kbd>, Enter | Exit `logu`
 
 ## Usage
 
