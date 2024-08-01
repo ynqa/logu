@@ -133,14 +133,9 @@ async fn main() -> anyhow::Result<()> {
 
     loop {
         let event = crossterm::event::read()?;
+        #[allow(clippy::single_match)]
         match event {
             Event::Key(KeyEvent {
-                code: KeyCode::Enter,
-                modifiers: KeyModifiers::NONE,
-                kind: KeyEventKind::Press,
-                state: KeyEventState::NONE,
-            })
-            | Event::Key(KeyEvent {
                 code: KeyCode::Char('c'),
                 modifiers: KeyModifiers::CONTROL,
                 kind: KeyEventKind::Press,
