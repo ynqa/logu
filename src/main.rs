@@ -114,7 +114,9 @@ async fn main() -> anyhow::Result<()> {
                         crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
                         cursor::MoveTo(0, 0),
                     )?;
-                    for cluster in drain.clusters().iter().take(terminal_size.1 as usize) {
+                    for cluster in drain.clusters().iter()
+                        .filter(|cluster| cluster.size > 1)
+                        .take(terminal_size.1 as usize) {
                         crossterm::execute!(
                             io::stdout(),
                             style::Print(cluster),
