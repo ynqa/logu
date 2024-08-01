@@ -1,11 +1,14 @@
 use std::io;
 
 use clap::Parser;
-use promkit::crossterm::{
-    self, cursor,
-    event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
-    style,
-    terminal::{disable_raw_mode, enable_raw_mode},
+use promkit::{
+    crossterm::{
+        self, cursor,
+        event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
+        style,
+        terminal::{disable_raw_mode, enable_raw_mode},
+    },
+    grapheme::StyledGraphemes,
 };
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
@@ -114,14 +117,24 @@ async fn main() -> anyhow::Result<()> {
                         crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
                         cursor::MoveTo(0, 0),
                     )?;
+                    let mut total_rows = 0;
                     for cluster in drain.clusters().iter()
                         .filter(|cluster| cluster.size > 1)
                         .take(terminal_size.1 as usize) {
+                        let styled = StyledGraphemes::from(cluster.to_string());
+                        let rows = styled.matrixify(terminal_size.0 as usize, terminal_size.1 as usize, 0).0;
+
+                        if total_rows + rows.len() > terminal_size.1 as usize {
+                            break;
+                        }
+
                         crossterm::execute!(
                             io::stdout(),
                             style::Print(cluster),
                             cursor::MoveToNextLine(1),
                         )?;
+
+                        total_rows += rows.len();
                     }
                 }
             }
