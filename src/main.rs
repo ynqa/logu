@@ -42,6 +42,13 @@ pub struct Args {
     #[arg(long = "train-interval", default_value = "10")]
     pub train_interval_millis: u64,
 
+    #[arg(
+        long = "cluster-size-th",
+        default_value = "1",
+        help = "Threshold to filter out small clusters."
+    )]
+    pub cluster_size_th: usize,
+
     // Drain related params
     #[arg(
         long = "max-clusters",
@@ -119,7 +126,7 @@ async fn main() -> anyhow::Result<()> {
                     )?;
                     let mut total_rows = 0;
                     for cluster in drain.clusters().iter()
-                        .filter(|cluster| cluster.size > 1)
+                        .filter(|cluster| cluster.size > args.cluster_size_th)
                         .take(terminal_size.1 as usize) {
                         let styled = StyledGraphemes::from(cluster.to_string());
                         let rows = styled.matrixify(terminal_size.0 as usize, terminal_size.1 as usize, 0).0;
