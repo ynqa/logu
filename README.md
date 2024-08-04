@@ -1,5 +1,7 @@
 # logu
 
+![logu.gif](https://github.com/ynqa/ynqa/blob/master/demo/logu.gif)
+
 *logu* is for extracting patterns from (streaming) unstructured log messages.
 
 For parsing unstructured logs, it uses the parser from
