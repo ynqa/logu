@@ -61,6 +61,8 @@ Options:
           Interval to render the list in milliseconds. [default: 100]
       --train-interval <TRAIN_INTERVAL_MILLIS>
           [default: 10]
+      --cluster-size-th <CLUSTER_SIZE_TH>
+          Threshold to filter out small clusters. [default: 0]
       --max-clusters <MAX_CLUSTERS>
 
       --max-node-depth <MAX_NODE_DEPTH>
