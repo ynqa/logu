@@ -95,6 +95,11 @@ async fn main() -> anyhow::Result<()> {
         )?;
 
         let mut reader = BufReader::new(tokio::io::stdin()).lines();
+        let mut prev = drain
+            .clusters()
+            .iter()
+            .map(|cluster| cluster.cluster_id)
+            .collect::<Vec<usize>>();
 
         while !canceled.is_cancelled() {
             tokio::select! {
@@ -102,7 +107,11 @@ async fn main() -> anyhow::Result<()> {
                     // Set a timeout to ensure non-blocking behavior,
                     // especially responsive to user inputs like ctrl+c.
                     // Continuously retry until cancellation to prevent loss of logs.
-                    let ret = timeout(Duration::from_millis(args.retrieval_timeout_millis), reader.next_line()).await;
+                    let ret = timeout(
+                        Duration::from_millis(args.retrieval_timeout_millis),
+                        reader.next_line(),
+                    )
+                    .await;
                     if ret.is_err() {
                         continue;
                     }
@@ -118,31 +127,50 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 _ = render_interval.tick() => {
-                    let terminal_size = crossterm::terminal::size()?;
-                    crossterm::execute!(
-                        io::stdout(),
-                        crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
-                        crossterm::terminal::Clear(crossterm::terminal::ClearType::Purge),
-                        cursor::MoveTo(0, 0),
-                    )?;
-                    let mut total_rows = 0;
-                    for cluster in drain.clusters().iter()
-                        .filter(|cluster| cluster.size > args.cluster_size_th)
-                        .take(terminal_size.1 as usize) {
-                        let styled = StyledGraphemes::from(cluster.to_string());
-                        let rows = styled.matrixify(terminal_size.0 as usize, terminal_size.1 as usize, 0).0;
-
-                        if total_rows + rows.len() > terminal_size.1 as usize {
-                            break;
-                        }
-
+                    if prev
+                        != drain
+                            .clusters()
+                            .iter()
+                            .map(|cluster| cluster.cluster_id)
+                            .collect::<Vec<usize>>()
+                    {
+                        let terminal_size = crossterm::terminal::size()?;
                         crossterm::execute!(
                             io::stdout(),
-                            style::Print(cluster),
-                            cursor::MoveToNextLine(1),
+                            crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
+                            crossterm::terminal::Clear(crossterm::terminal::ClearType::Purge),
+                            cursor::MoveTo(0, 0),
                         )?;
 
-                        total_rows += rows.len();
+                        let mut total_rows = 0;
+                        for cluster in drain
+                            .clusters()
+                            .iter()
+                            .filter(|cluster| cluster.size > args.cluster_size_th)
+                            .take(terminal_size.1 as usize)
+                        {
+                            let styled = StyledGraphemes::from(cluster.to_string());
+                            let rows = styled
+                                .matrixify(terminal_size.0 as usize, terminal_size.1 as usize, 0)
+                                .0;
+
+                            if total_rows + rows.len() > terminal_size.1 as usize {
+                                break;
+                            }
+
+                            crossterm::execute!(
+                                io::stdout(),
+                                style::Print(cluster),
+                                cursor::MoveToNextLine(1),
+                            )?;
+
+                            total_rows += rows.len();
+                        }
+                        prev = drain
+                            .clusters()
+                            .iter()
+                            .map(|cluster| cluster.cluster_id)
+                            .collect::<Vec<usize>>();
                     }
                 }
             }
