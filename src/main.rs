@@ -44,7 +44,7 @@ pub struct Args {
 
     #[arg(
         long = "cluster-size-th",
-        default_value = "1",
+        default_value = "0",
         help = "Threshold to filter out small clusters."
     )]
     pub cluster_size_th: usize,
