@@ -122,6 +122,7 @@ async fn main() -> anyhow::Result<()> {
                     crossterm::execute!(
                         io::stdout(),
                         crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
+                        crossterm::terminal::Clear(crossterm::terminal::ClearType::Purge),
                         cursor::MoveTo(0, 0),
                     )?;
                     let mut total_rows = 0;
@@ -146,10 +147,6 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        crossterm::execute!(
-            io::stdout(),
-            crossterm::terminal::Clear(crossterm::terminal::ClearType::Purge),
-        )?;
         Ok(())
     });
 
