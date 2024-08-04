@@ -20,8 +20,8 @@ so please take a look.
 - [x] Extract patterns from streaming log messages
 - Enables more detailed analysis
   - [ ] Displays the number of messages included
-        in the cluster and a list of specific examples
-  - [ ] Identifies attributes such as IP, port and so on.
+        and a list of specific examples in the cluster
+  - [ ] Identifies attributes such as IP, port
 
 ## Installation
 
