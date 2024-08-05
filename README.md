@@ -47,9 +47,9 @@ stern --context kind-kind - | logu
 
 ## Keymap
 
-| Key                        | Action
-| :-                         | :-
-| <kbd>Ctrl + C</kbd>, Enter | Exit `logu`
+| Key                 | Action
+| :-                  | :-
+| <kbd>Ctrl + C</kbd> | Exit `logu`
 
 ## Usage
 
